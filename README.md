@@ -3,7 +3,7 @@
 Repository ini berisi implementasi *source code* Final Project mata kuliah **Desain dan Analisis Algoritma**. Program mengimplementasikan algoritma *Greedy* **Prim** (*Binary Min-Heap*, O(E \log V)) dan **Kruskal** (*Disjoint Set Union*, O(E \log E)) secara manual untuk mencari *Minimum Spanning Tree* (MST) pada peta jalan asli dari OpenStreetMap, sekaligus melakukan pengujian skalabilitas waktu eksekusi pada *Sparse Graph* dan *Dense Graph*.
 
 ## Anggota Kelompok
-1. [Nama Lengkap Anggota 1] – [NIM]
+1.  Rasyid Yusuf Sugiyono   – L0125028
 2.  Miftahul Habibi 		    – L0125084
 3. [Nama Lengkap Anggota 3] – [NIM] 
 
