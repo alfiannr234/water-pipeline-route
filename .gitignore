@@ -1,0 +1,17 @@
+# Cache mentah hasil unduhan OpenStreetMap (OSMnx)
+cache/
+
+# File bytecode otomatis dari Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment (antisipasi jika nanti dibuat)
+venv/
+.venv/
+env/
+
+# File sistem operasi & konfigurasi editor
+.vscode/
+.DS_Store
+Thumbs.db

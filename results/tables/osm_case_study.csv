@@ -1,0 +1,17 @@
+Parameter,Nilai
+Koordinat_Pusat,"(-7.5561, 110.8565)"
+Radius_Meter,500
+Jumlah_Simpul_V,356
+Jumlah_Sisi_Kandidat_E,447
+Jumlah_Sisi_MST,355
+Panjang_Jalan_Total_m,21376.14
+Panjang_Pipa_MST_m,13358.49
+Penghematan_Panjang_m,8017.64
+Persentase_Penghematan_%,37.51
+Estimasi_Biaya_Awal_Rp,961926126
+Estimasi_Biaya_MST_Rp,601132127
+Penghematan_Biaya_Rp,360794000
+Prim_Time_ms,0.5999
+Kruskal_Time_ms,0.6728
+Prim_Memory_KB,28.83
+Kruskal_Memory_KB,35.34
