@@ -1,88 +1,124 @@
+import argparse
 import random
 
 from src.algorithms.kruskal import kruskal_mst
 from src.algorithms.prim import prim_mst
-from src.data.osm_loader import load_osm_water_graph
+from src.algorithms.prim_array import prim_array_mst
 from src.evaluation.benchmark import (
+    collect_environment,
     measure_algorithm,
     run_scalability_benchmark,
+    save_environment,
     save_osm_summary_csv,
 )
 from src.evaluation.visualizer import plot_benchmark_results, plot_osm_mst
 
+# Titik pusat kawasan permukiman di Kecamatan Jebres, Surakarta
+KOORDINAT_PUSAT = (-7.5561, 110.8565)
 
-def run_osm_case_study() -> None:
-    print("=== 1. STUDI KASUS RIIL: OPTIMASI PIPA AIR BERBASIS OPENSTREETMAP ===")
-    # Koordinat contoh kawasan permukiman di Jebres, Surakarta (ubah sesuai target wilayah)
-    koordinat_pusat = (-7.5561, 110.8565)
-    radius_m = 500
-    biaya_per_meter = 45000  # Asumsi pengadaan & instalasi pipa distribusi Rp 45.000/m
+# Lokasi simpul sumber (pipa induk / reservoir). Jika lokasi sebenarnya diketahui,
+# ganti dengan koordinat tersebut. Panjang MST TIDAK bergantung pada simpul awal;
+# pilihan ini hanya memengaruhi titik mulai penelusuran Prim dan penanda di peta.
+KOORDINAT_SUMBER = KOORDINAT_PUSAT
 
-    g_clean, idx_to_osm, edges, adj_list = load_osm_water_graph(
-        koordinat_pusat, radius_m
-    )
-    num_v = len(idx_to_osm)
-    num_e = len(edges)
+# Skenario studi kasus: (radius meter, network_type OSMnx)
+SKENARIO_OSM = [(300, "all"), (500, "all"), (1000, "all"), (500, "drive")]
+SKENARIO_PETA = (500, "all")  # skenario yang divisualisasikan sebagai Gambar 1
 
-    p_metrics = measure_algorithm(prim_mst, num_v, adj_list)
-    k_metrics = measure_algorithm(kruskal_mst, num_v, edges)
+# Harga satuan ILUSTRATIF (bukan harga resmi), Rp per meter pipa terpasang
+BIAYA_PER_METER = 45000
 
-    mst_prim, total_prim = p_metrics["result"]
-    mst_kruskal, total_kruskal = k_metrics["result"]
 
-    assert (
-        abs(total_prim - total_kruskal) < 1e-6
-    ), "Error: Total panjang Prim & Kruskal berbeda!"
+def run_osm_case_study(repeats: int) -> None:
+    from src.data.osm_loader import load_osm_water_graph, nearest_node_index
 
-    total_raw = sum(w for _, _, w in edges)
-    penghematan_m = total_raw - total_kruskal
-    persen_hemat = (penghematan_m / total_raw) * 100.0
+    print("=== 1. STUDI KASUS: TATA LETAK PIPA MINIMUM BERBASIS OPENSTREETMAP ===")
+    rows = []
+    for radius_m, net_type in SKENARIO_OSM:
+        g_clean, idx_to_osm, edges, adj_list = load_osm_water_graph(
+            KOORDINAT_PUSAT, radius_m, net_type
+        )
+        num_v, num_e = len(idx_to_osm), len(edges)
+        src = nearest_node_index(g_clean, idx_to_osm, *KOORDINAT_SUMBER)
 
-    summary = {
-        "Koordinat_Pusat": str(koordinat_pusat),
-        "Radius_Meter": radius_m,
-        "Jumlah_Simpul_V": num_v,
-        "Jumlah_Sisi_Kandidat_E": num_e,
-        "Jumlah_Sisi_MST": len(mst_kruskal),
-        "Panjang_Jalan_Total_m": round(total_raw, 2),
-        "Panjang_Pipa_MST_m": round(total_kruskal, 2),
-        "Penghematan_Panjang_m": round(penghematan_m, 2),
-        "Persentase_Penghematan_%": round(persen_hemat, 2),
-        "Estimasi_Biaya_Awal_Rp": round(total_raw * biaya_per_meter),
-        "Estimasi_Biaya_MST_Rp": round(total_kruskal * biaya_per_meter),
-        "Penghematan_Biaya_Rp": round(penghematan_m * biaya_per_meter),
-        "Prim_Time_ms": round(p_metrics["time_ms"], 4),
-        "Kruskal_Time_ms": round(k_metrics["time_ms"], 4),
-        "Prim_Memory_KB": round(p_metrics["peak_kb"], 2),
-        "Kruskal_Memory_KB": round(k_metrics["peak_kb"], 2),
-    }
+        metrics = {
+            "prim_heap": measure_algorithm(
+                prim_mst, num_v, adj_list, src, repeats=repeats
+            ),
+            "prim_array": measure_algorithm(
+                prim_array_mst, num_v, adj_list, src, repeats=repeats
+            ),
+            "kruskal": measure_algorithm(kruskal_mst, num_v, edges, repeats=repeats),
+        }
+        mst_kruskal, total_mst = metrics["kruskal"]["result"]
+        for name, m in metrics.items():
+            assert abs(m["result"][1] - total_mst) < 1e-6, f"Total {name} berbeda!"
 
-    for key, val in summary.items():
-        print(f"  {key:<28}: {val}")
+        total_raw = sum(w for _, _, w in edges)
+        selisih = total_raw - total_mst
+        row = {
+            "Radius_m": radius_m,
+            "Network_Type": net_type,
+            "V": num_v,
+            "E": num_e,
+            "E_per_V": round(num_e / num_v, 3),
+            "Sisi_MST": len(mst_kruskal),
+            "Sisi_Penutup_Loop_Dibuang": num_e - (num_v - 1),
+            "Panjang_Semua_Ruas_m": round(total_raw, 2),
+            "Panjang_MST_m": round(total_mst, 2),
+            "Selisih_m": round(selisih, 2),
+            "Selisih_persen": round(selisih / total_raw * 100.0, 2),
+            "Biaya_Ilustratif_MST_Rp": round(total_mst * BIAYA_PER_METER),
+        }
+        for name, m in metrics.items():
+            row[f"{name}_ms_median"] = round(m["time_ms"], 4)
+            row[f"{name}_peak_kb"] = round(m["peak_kb"], 2)
+        rows.append(row)
+        print("  " + ", ".join(f"{k}={v}" for k, v in row.items()))
 
-    save_osm_summary_csv(summary, "results/tables/osm_case_study.csv")
-    plot_osm_mst(
-        g_clean=g_clean,
-        idx_to_osm=idx_to_osm,
-        all_edges=edges,
-        mst_edges=mst_kruskal,
-        total_raw=total_raw,
-        total_mst=total_kruskal,
-        save_path="results/figures/peta_pipa_air_mst.png",
-    )
+        if (radius_m, net_type) == SKENARIO_PETA:
+            plot_osm_mst(
+                g_clean=g_clean,
+                idx_to_osm=idx_to_osm,
+                all_edges=edges,
+                mst_edges=mst_kruskal,
+                total_raw=total_raw,
+                total_mst=total_mst,
+                save_path="results/figures/peta_pipa_air_mst.png",
+                source_idx=src,
+            )
+
+    save_osm_summary_csv(rows, "results/tables/osm_case_study.csv")
 
 
 def main() -> None:
-    random.seed(42)  # Menjamin hasil pengujian bersifat reproducible
+    parser = argparse.ArgumentParser(
+        description="Optimasi rute pipa air: Prim vs Kruskal"
+    )
+    parser.add_argument(
+        "--repeats", type=int, default=5, help="jumlah pengulangan pengukuran waktu"
+    )
+    parser.add_argument(
+        "--skip-osm",
+        action="store_true",
+        help="lewati studi kasus OSM (tanpa internet)",
+    )
+    args = parser.parse_args()
 
-    # Tahap 1: Eksperimen Peta Riil OpenStreetMap
-    run_osm_case_study()
+    env = collect_environment()
+    print("Perangkat uji:", env)
+    save_environment(env, "results/tables/environment.json")
 
-    # Tahap 2: Uji Skalabilitas Waktu & Memori (Sparse vs Dense Graph)
+    random.seed(42)  # Menjamin graf sintetis bersifat reproducible
+
+    if not args.skip_osm:
+        run_osm_case_study(args.repeats)
+
     ukuran_simpul = [200, 500, 1000, 1500, 2000]
     benchmark_results = run_scalability_benchmark(
         vertex_sizes=ukuran_simpul,
         output_csv_path="results/tables/benchmark_results.csv",
+        repeats=args.repeats,
     )
     plot_benchmark_results(
         results=benchmark_results,

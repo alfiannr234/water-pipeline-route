@@ -1,11 +1,11 @@
 # Optimasi Rute Pipa Distribusi Air Bersih Berbasis Data OpenStreetMap Menggunakan Algoritma Prim dan Kruskal
 
-Repository ini berisi implementasi *source code* Final Project mata kuliah **Desain dan Analisis Algoritma**. Program mengimplementasikan algoritma *Greedy* **Prim** (*Binary Min-Heap*, $O(E \log V)$) dan **Kruskal** (*Disjoint Set Union*, $O(E \log E)$) secara manual untuk mencari *Minimum Spanning Tree* (MST) pada peta jalan asli dari OpenStreetMap, sekaligus melakukan pengujian skalabilitas waktu eksekusi pada *Sparse Graph* dan *Dense Graph*.
+Repository ini berisi implementasi *source code* Final Project mata kuliah **Desain dan Analisis Algoritma**. Program mengimplementasikan algoritma *Greedy* **Prim** versi *Binary Min-Heap* (O(E log V)), **Prim** versi larik (O(V²)), dan **Kruskal** (*Disjoint Set Union*, O(E log E)) secara manual untuk mencari *Minimum Spanning Tree* (MST) pada peta jalan asli dari OpenStreetMap, sekaligus melakukan pengujian skalabilitas waktu eksekusi pada *Sparse Graph* dan *Dense Graph*.
 
 ## Anggota Kelompok
-1. [Nama Lengkap Anggota 1] – [NIM]
-2. [Nama Lengkap Anggota 2] – [NIM]
-3. [Nama Lengkap Anggota 3] – [NIM]
+1.  Rasyid Yusuf Sugiyono   – L0125028
+2.  Miftahul Habibi         – L0125084
+3.  Alffian Naufal Rabbani  – L0125125 
 
 ---
 
@@ -22,8 +22,8 @@ Repository ini berisi implementasi *source code* Final Project mata kuliah **Des
 
 1. **Clone atau unduh repository ini:**
    ```bash
-   git clone [https://github.com/](https://github.com/)[username-kalian]/[nama-repository].git
-   cd [nama-repository]
+   git clone https://github.com/alfiannr234/water-pipeline-route.git
+   cd water-pipeline-route
    ```
 
 2. **(Opsional) Buat dan aktifkan *virtual environment*:**
@@ -42,38 +42,48 @@ Repository ini berisi implementasi *source code* Final Project mata kuliah **Des
 
 4. **Jalankan skrip utama:**
    ```bash
-   python optimasi_pipa_air_osmnx.py
+   python main.py              # studi kasus OSM + benchmark (5 pengulangan)
+   python main.py --repeats 10 # jumlah pengulangan lain
+   python main.py --skip-osm   # benchmark saja, tanpa internet
    ```
 
 ### Opsi 2: Menjalankan di Google Colab
 
-1. Unggah file `optimasi_pipa_air_osmnx.py` (atau salin isinya ke sel kode baru di Google Colab).
+1. Clone repository ini di sel pertama: `!git clone https://github.com/alfiannr234/water-pipeline-route.git` lalu `%cd water-pipeline-route`.
 2. Jalankan perintah instalasi berikut pada sel pertama:
    ```python
    !pip install osmnx networkx matplotlib
    ```
 3. Jalankan skrip pada sel berikutnya:
    ```python
-   !python optimasi_pipa_air_osmnx.py
+   !python main.py              # studi kasus OSM + benchmark (5 pengulangan)
+   python main.py --repeats 10 # jumlah pengulangan lain
+   python main.py --skip-osm   # benchmark saja, tanpa internet
    ```
 
 ---
 
 ## Mengubah Lokasi Studi Kasus
-Untuk mengganti area perumahan yang diuji, ubah variabel `koordinat_surakarta` (format `(latitude, longitude)`) dan `radius_m` di dalam fungsi `jalankan_studi_kasus_pipa_air()` pada file `optimasi_pipa_air_osmnx.py`:
+Semua pengaturan ada di bagian atas `main.py`:
 
 ```python
-koordinat_surakarta = (-7.5561, 110.8565)  # Ganti dengan koordinat lokasi pilihan
-radius_m = 500                             # Radius area peta dalam meter
+KOORDINAT_PUSAT = (-7.5561, 110.8565)   # titik pusat area (latitude, longitude)
+KOORDINAT_SUMBER = KOORDINAT_PUSAT      # ganti dengan lokasi pipa induk/reservoir jika diketahui
+SKENARIO_OSM = [(300, "all"), (500, "all"), (1000, "all"), (500, "drive")]  # (radius m, network_type)
+BIAYA_PER_METER = 45000                 # harga satuan ILUSTRATIF, bukan harga resmi
 ```
+
+Panjang MST tidak bergantung pada simpul sumber; simpul sumber hanya menentukan titik mulai Prim dan penanda di peta.
 
 ---
 
 ## Keluaran Program
-Setelah eksekusi selesai, program akan menghasilkan:
-1. **Ringkasan Terminal:** Jumlah simpul ($V$), jumlah ruas jalan ($E$), total panjang pipa sebelum dan sesudah optimasi MST, persentase penghematan biaya, serta tabel waktu eksekusi *benchmark* (dalam milidetik).
-2. **`peta_pipa_air_mst.png`:** Visualisasi perbandingan peta jaringan jalan asli OpenStreetMap dengan rute pipa air optimal hasil MST.
-3. **`benchmark_pipa_air.png`:** Grafik perbandingan waktu eksekusi empiris algoritma Prim dan Kruskal pada *Sparse Graph* dan *Dense Graph*.
+Setelah eksekusi selesai, program menghasilkan:
+1. **`results/tables/environment.json`** — spesifikasi perangkat uji (prosesor, RAM, OS, versi Python). Wajib dicantumkan di makalah.
+2. **`results/tables/osm_case_study.csv`** — satu baris per skenario OSM: V, E, jumlah sisi penutup loop yang dibuang MST (E − V + 1), panjang semua ruas vs panjang MST, serta waktu dan memori ketiga algoritma.
+3. **`results/tables/benchmark_results.csv`** — untuk setiap graf sintetis: median, minimum, dan maksimum waktu dari N pengulangan (urutan algoritma diacak tiap putaran, didahului pemanasan), memori puncak, dan penghitung struktural (jumlah *push* dan ukuran maksimum *heap* Prim, jumlah sisi yang diperiksa Kruskal).
+4. **`results/figures/peta_pipa_air_mst.png`** — peta jaringan jalan OSM vs tata letak pipa MST (skenario radius 500 m, `all`).
+5. **`results/figures/benchmark_prim_vs_kruskal.png`** — grafik waktu (median dengan batang galat min–maks) dan memori ketiga algoritma pada graf *sparse* dan *dense*.
 
 ---
 

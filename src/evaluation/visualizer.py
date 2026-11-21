@@ -11,6 +11,7 @@ def plot_osm_mst(
     total_raw: float,
     total_mst: float,
     save_path: str,
+    source_idx: int = 0,
 ) -> None:
     """Menyimpan visualisasi peta jaringan jalan OSM vs rute pipa MST optimal."""
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -21,8 +22,8 @@ def plot_osm_mst(
     titles = [
         f"Peta Jaringan Jalan Asli OSM (Kandidat)\n"
         f"V = {num_v} | E = {len(all_edges)} | Total = {total_raw:,.1f} m",
-        f"Rute Pipa Air Optimal (Minimum Spanning Tree)\n"
-        f"V = {num_v} | E = {len(mst_edges)} | Total = {total_mst:,.1f} m (Hemat {persen_hemat:.1f}%)",
+        f"Tata Letak Pipa Minimum (Minimum Spanning Tree)\n"
+        f"V = {num_v} | E = {len(mst_edges)} | Total = {total_mst:,.1f} m ({persen_hemat:.1f}% lebih pendek dari total ruas jalan)",
     ]
 
     for idx, ax in enumerate(axes):
@@ -52,11 +53,11 @@ def plot_osm_mst(
                 ax.plot([x1, x2], [y1, y2], color="#0984e3", linewidth=2.2, zorder=2)
 
             x0, y0 = (
-                g_clean.nodes[idx_to_osm[0]]["x"],
-                g_clean.nodes[idx_to_osm[0]]["y"],
+                g_clean.nodes[idx_to_osm[source_idx]]["x"],
+                g_clean.nodes[idx_to_osm[source_idx]]["y"],
             )
             ax.scatter(
-                x0, y0, color="#d63031", s=70, zorder=3, label="Titik Awal / Sumber Air"
+                x0, y0, color="#d63031", s=70, zorder=3, label="Simpul Sumber (asumsi)"
             )
             ax.legend(loc="upper right")
 
@@ -72,66 +73,55 @@ def plot_osm_mst(
     print(f"-> Visualisasi peta OSM disimpan ke '{save_path}'")
 
 
-def plot_benchmark_results(
-    results: Dict[str, Dict[str, List[float]]],
-    vertex_sizes: List[int],
-    save_path: str,
-) -> None:
+LABELS = {
+    "prim_heap": ("Prim heap O(E log V)", "o"),
+    "prim_array": ("Prim larik O(V²)", "^"),
+    "kruskal": ("Kruskal O(E log E)", "s"),
+}
+
+
+def plot_benchmark_results(results, vertex_sizes: List[int], save_path: str) -> None:
     """
-    Menyimpan grafik 2x2: perbandingan Waktu Eksekusi (baris atas)
-    dan Penggunaan Memori Puncak (baris bawah) untuk Sparse & Dense Graph.
+    Grafik 2x2: waktu eksekusi (median, batang galat = min-maks) di baris atas
+    dan memori puncak di baris bawah, untuk Sparse & Dense Graph.
     """
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    densities = ["sparse", "dense"]
 
-    for col, density in enumerate(densities):
-        # Baris 0: Waktu Eksekusi (ms)
-        ax_time = axes[0, col]
-        ax_time.plot(
-            vertex_sizes,
-            results[density]["prim_ms"],
-            marker="o",
-            linewidth=2,
-            label="Prim O(E log V)",
+    for col, density in enumerate(["sparse", "dense"]):
+        ax_time, ax_mem = axes[0, col], axes[1, col]
+        for name, (label, marker) in LABELS.items():
+            r = results[density][name]
+            lower = [m - lo for m, lo in zip(r["med"], r["min"])]
+            upper = [hi - m for m, hi in zip(r["med"], r["max"])]
+            ax_time.errorbar(
+                vertex_sizes,
+                r["med"],
+                yerr=[lower, upper],
+                marker=marker,
+                linewidth=2,
+                capsize=4,
+                label=label,
+            )
+            ax_mem.plot(
+                vertex_sizes,
+                r["kb"],
+                marker=marker,
+                linewidth=2,
+                linestyle="--",
+                label=label,
+            )
+
+        ax_time.set_title(
+            f"Waktu Eksekusi (median): {density.upper()} Graph", fontweight="bold"
         )
-        ax_time.plot(
-            vertex_sizes,
-            results[density]["kruskal_ms"],
-            marker="s",
-            linewidth=2,
-            label="Kruskal O(E log E)",
-        )
-        ax_time.set_title(f"Waktu Eksekusi: {density.upper()} Graph", fontweight="bold")
-        ax_time.set_xlabel("Jumlah Simpul (V)")
         ax_time.set_ylabel("Waktu Eksekusi (ms)")
-        ax_time.legend()
-        ax_time.grid(True, linestyle="--", alpha=0.4)
-
-        # Baris 1: Penggunaan Memori Puncak (KB)
-        ax_mem = axes[1, col]
-        ax_mem.plot(
-            vertex_sizes,
-            results[density]["prim_kb"],
-            marker="o",
-            linewidth=2,
-            linestyle="--",
-            label="Prim (Min-Heap)",
-        )
-        ax_mem.plot(
-            vertex_sizes,
-            results[density]["kruskal_kb"],
-            marker="s",
-            linewidth=2,
-            linestyle="--",
-            label="Kruskal (Edge List + DSU)",
-        )
         ax_mem.set_title(f"Memori Puncak: {density.upper()} Graph", fontweight="bold")
-        ax_mem.set_xlabel("Jumlah Simpul (V)")
         ax_mem.set_ylabel("Memori Puncak (KB)")
-        ax_mem.legend()
-        ax_mem.grid(True, linestyle="--", alpha=0.4)
+        for ax in (ax_time, ax_mem):
+            ax.set_xlabel("Jumlah Simpul (V)")
+            ax.legend()
+            ax.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)

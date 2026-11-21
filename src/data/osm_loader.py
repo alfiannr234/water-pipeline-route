@@ -6,14 +6,19 @@ import osmnx as ox
 def load_osm_water_graph(
     center_point: Tuple[float, float],
     radius_meter: int = 500,
+    network_type: str = "all",
 ):
     """
     Mengunduh peta jaringan jalan dari OpenStreetMap lalu membersihkannya
     menjadi graf tak berarah sederhana yang terhubung penuh
     (Largest Connected Component).
     """
-    print(f"Mengunduh peta OpenStreetMap radius {radius_meter}m dari {center_point}...")
-    g_raw = ox.graph_from_point(center_point, dist=radius_meter, network_type="all")
+    print(
+        f"Mengunduh peta OpenStreetMap radius {radius_meter}m ({network_type}) dari {center_point}..."
+    )
+    g_raw = ox.graph_from_point(
+        center_point, dist=radius_meter, network_type=network_type
+    )
 
     # Konversi MultiDiGraph -> Simple Undirected Graph
     g_undirected = nx.Graph()
@@ -50,3 +55,27 @@ def load_osm_water_graph(
         adj_list[v].append((u, w))
 
     return g_clean, idx_to_osm, edges, adj_list
+
+
+def nearest_node_index(
+    g_clean, idx_to_osm: Dict[int, int], lat: float, lon: float
+) -> int:
+    """Indeks simpul graf yang paling dekat (jarak haversine) dengan koordinat (lat, lon)."""
+    import math
+
+    def haversine(lat1, lon1, lat2, lon2):
+        r = 6371000.0
+        p1, p2 = math.radians(lat1), math.radians(lat2)
+        dp, dl = p2 - p1, math.radians(lon2 - lon1)
+        a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+        return 2 * r * math.asin(math.sqrt(a))
+
+    return min(
+        idx_to_osm,
+        key=lambda i: haversine(
+            lat,
+            lon,
+            g_clean.nodes[idx_to_osm[i]]["y"],
+            g_clean.nodes[idx_to_osm[i]]["x"],
+        ),
+    )

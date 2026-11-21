@@ -1,38 +1,42 @@
+"""
+Penghitung struktural (tidak bergantung perangkat) untuk menjelaskan
+perbedaan waktu dan memori antaralgoritma:
+- jumlah operasi push dan ukuran maksimum heap pada Prim lazy
+- jumlah sisi terurut yang diperiksa Kruskal sebelum berhenti dini
+"""
+
 import heapq
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
-AdjList = List[List[Tuple[int, float]]]
-Edge = Tuple[int, int, float]
+from src.algorithms.disjoint_set import DisjointSet
 
 
-def prim_mst(num_vertices: int, adj_list: AdjList) -> Tuple[List[Edge], float]:
-    """
-    Algoritma Prim menggunakan Adjacency List dan Binary Min-Heap.
-    Kompleksitas Waktu : O(E log V)
-    Kompleksitas Ruang : O(V + E)
-    """
+def prim_heap_counts(num_vertices: int, adj_list, start: int = 0) -> Dict[str, int]:
     visited = [False] * num_vertices
-    # Tuple di heap: (bobot, simpul_tujuan, simpul_asal)
-    min_heap: List[Tuple[float, int, int]] = [(0.0, 0, -1)]
-
-    mst_edges: List[Edge] = []
-    total_weight = 0.0
-    visited_count = 0
-
-    while min_heap and visited_count < num_vertices:
-        weight, u, parent = heapq.heappop(min_heap)
+    heap: List[Tuple[float, int]] = [(0.0, start)]
+    pushes, max_heap, count = 1, 1, 0
+    while heap and count < num_vertices:
+        _, u = heapq.heappop(heap)
         if visited[u]:
             continue
-
         visited[u] = True
-        total_weight += weight
-        visited_count += 1
+        count += 1
+        for v, w in adj_list[u]:
+            if not visited[v]:
+                heapq.heappush(heap, (w, v))
+                pushes += 1
+                if len(heap) > max_heap:
+                    max_heap = len(heap)
+    return {"prim_pushes": pushes, "prim_max_heap": max_heap}
 
-        if parent != -1:
-            mst_edges.append((parent, u, weight))
 
-        for neighbor, edge_weight in adj_list[u]:
-            if not visited[neighbor]:
-                heapq.heappush(min_heap, (edge_weight, neighbor, u))
-
-    return mst_edges, total_weight
+def kruskal_scan_count(num_vertices: int, edges) -> Dict[str, int]:
+    dsu = DisjointSet(num_vertices)
+    taken, scanned = 0, 0
+    for u, v, _ in sorted(edges, key=lambda e: e[2]):
+        scanned += 1
+        if dsu.union(u, v):
+            taken += 1
+            if taken == num_vertices - 1:
+                break
+    return {"kruskal_edges_scanned": scanned}
