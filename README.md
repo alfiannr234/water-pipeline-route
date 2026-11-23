@@ -1,11 +1,20 @@
 # Optimasi Rute Pipa Distribusi Air Bersih Berbasis Data OpenStreetMap Menggunakan Algoritma Prim dan Kruskal
 
+<<<<<<< HEAD
 Repository ini berisi implementasi *source code* Final Project mata kuliah **Desain dan Analisis Algoritma**. Program mengimplementasikan algoritma *Greedy* **Prim** versi *Binary Min-Heap* (O(E log V)), **Prim** versi larik (O(V²)), dan **Kruskal** (*Disjoint Set Union*, O(E log E)) secara manual untuk mencari *Minimum Spanning Tree* (MST) pada peta jalan asli dari OpenStreetMap, sekaligus melakukan pengujian skalabilitas waktu eksekusi pada *Sparse Graph* dan *Dense Graph*.
 
 ## Anggota Kelompok
 1.  Rasyid Yusuf Sugiyono   – L0125028
 2.  Miftahul Habibi         – L0125084
 3.  Alffian Naufal Rabbani  – L0125125 
+=======
+Repository ini berisi implementasi *source code* Final Project mata kuliah **Desain dan Analisis Algoritma**. Program mengimplementasikan algoritma *Greedy* **Prim** (*Binary Min-Heap*, O(E \log V)) dan **Kruskal** (*Disjoint Set Union*, O(E \log E)) secara manual untuk mencari *Minimum Spanning Tree* (MST) pada peta jalan asli dari OpenStreetMap, sekaligus melakukan pengujian skalabilitas waktu eksekusi pada *Sparse Graph* dan *Dense Graph*.
+
+## Anggota Kelompok
+1.  Rasyid Yusuf Sugiyono   – L0125028
+2.  Miftahul Habibi 		    – L0125084
+3. [Nama Lengkap Anggota 3] – [NIM] 
+>>>>>>> 55047fa77362a19638e95a364840cb5360463229
 
 ---
 

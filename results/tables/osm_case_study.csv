@@ -1,17 +1,5 @@
-Parameter,Nilai
-Koordinat_Pusat,"(-7.5561, 110.8565)"
-Radius_Meter,500
-Jumlah_Simpul_V,356
-Jumlah_Sisi_Kandidat_E,447
-Jumlah_Sisi_MST,355
-Panjang_Jalan_Total_m,21376.14
-Panjang_Pipa_MST_m,13358.49
-Penghematan_Panjang_m,8017.64
-Persentase_Penghematan_%,37.51
-Estimasi_Biaya_Awal_Rp,961926126
-Estimasi_Biaya_MST_Rp,601132127
-Penghematan_Biaya_Rp,360794000
-Prim_Time_ms,0.5999
-Kruskal_Time_ms,0.6728
-Prim_Memory_KB,28.83
-Kruskal_Memory_KB,35.34
+Radius_m,Network_Type,V,E,E_per_V,Sisi_MST,Sisi_Penutup_Loop_Dibuang,Panjang_Semua_Ruas_m,Panjang_MST_m,Selisih_m,Selisih_persen,Biaya_Ilustratif_MST_Rp,prim_heap_ms_median,prim_heap_peak_kb,prim_array_ms_median,prim_array_peak_kb,kruskal_ms_median,kruskal_peak_kb
+300,all,113,128,1.133,112,16,6684.42,5297.48,1386.94,20.75,238386402,0.1038,9.27,0.5671,18.28,0.4046,11.36
+500,all,356,447,1.256,355,92,21376.14,13358.49,8017.64,37.51,601132127,0.3697,28.83,2.8488,66.48,0.3963,35.24
+1000,all,1501,1958,1.304,1500,458,91818.86,53128.99,38689.87,42.14,2390804719,2.1621,119.98,47.552,296.97,1.7423,150.15
+500,drive,173,217,1.254,172,45,9919.11,6228.28,3690.83,37.21,280272691,0.1586,14.08,0.6356,23.31,0.1806,16.91

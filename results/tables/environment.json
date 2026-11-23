@@ -1,0 +1,8 @@
+{
+  "platform": "Windows-11-10.0.28120-SP0",
+  "processor": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
+  "cpu_count_logical": 8,
+  "ram_gb": 19.9,
+  "python_version": "3.13.7",
+  "python_implementation": "CPython"
+}
