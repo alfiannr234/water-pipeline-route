@@ -87,12 +87,32 @@ def measure_algorithm(func: Callable, *args, repeats: int = 5) -> Dict[str, Any]
 
 def save_osm_summary_csv(rows: List[Dict[str, Any]], output_csv_path: str) -> None:
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
-    with open(output_csv_path, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+    with open(output_csv_path, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), delimiter=";"
+        )
         writer.writeheader()
         writer.writerows(rows)
     print(f"-> Ringkasan studi kasus OSM disimpan ke '{output_csv_path}'")
 
+def save_aligned_table(rows: List[Dict[str, Any]], output_txt_path: str) -> None:
+    if not rows:
+        return
+    os.makedirs(os.path.dirname(output_txt_path), exist_ok=True)
+    headers = list(rows[0].keys())
+    col_widths = {
+        h: max(len(str(h)), max(len(str(r[h])) for r in rows)) for h in headers
+    }
+
+    header_line = " | ".join(f"{h:<{col_widths[h]}}" for h in headers)
+    separator_line = "-+-".join("-" * col_widths[h] for h in headers)
+
+    with open(output_txt_path, mode="w", encoding="utf-8") as f:
+        f.write(header_line + "\n")
+        f.write(separator_line + "\n")
+        for r in rows:
+            f.write(" | ".join(f"{str(r[h]):<{col_widths[h]}}" for h in headers) + "\n")
+    print(f"-> Tabel rapi disimpan ke '{output_txt_path}'")
 
 def save_environment(env: Dict[str, Any], path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -166,9 +186,9 @@ def run_scalability_benchmark(
                 kb = measure_peak_kb(func, *inputs[kind])
                 for key, val in (("med", med), ("min", lo), ("max", hi), ("kb", kb)):
                     results[density][name][key].append(val)
-                row[f"{name}_ms_median"] = round(med, 4)
-                row[f"{name}_ms_min"] = round(lo, 4)
-                row[f"{name}_ms_max"] = round(hi, 4)
+                row[f"{name}_ms_median"] = round(med, 2)
+                row[f"{name}_ms_min"] = round(lo, 2)
+                row[f"{name}_ms_max"] = round(hi, 2)
                 row[f"{name}_peak_kb"] = round(kb, 2)
             row.update(prim_heap_counts(v, adj_list))
             row.update(kruskal_scan_count(v, edges))
@@ -182,10 +202,13 @@ def run_scalability_benchmark(
                 )
             )
 
-    with open(output_csv_path, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(csv_rows[0].keys()))
+    with open(output_csv_path, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=list(csv_rows[0].keys()), delimiter=";"
+        )
         writer.writeheader()
         writer.writerows(csv_rows)
+        
 
     print(f"\n-> Tabel hasil benchmark disimpan ke '{output_csv_path}'")
     return results

@@ -8,6 +8,7 @@ from src.evaluation.benchmark import (
     collect_environment,
     measure_algorithm,
     run_scalability_benchmark,
+    save_aligned_table,
     save_environment,
     save_osm_summary_csv,
 )
@@ -57,22 +58,19 @@ def run_osm_case_study(repeats: int) -> None:
         total_raw = sum(w for _, _, w in edges)
         selisih = total_raw - total_mst
         row = {
-            "Radius_m": radius_m,
-            "Network_Type": net_type,
+            "Skenario": f"{radius_m}m ({net_type})",
             "V": num_v,
             "E": num_e,
-            "E_per_V": round(num_e / num_v, 3),
-            "Sisi_MST": len(mst_kruskal),
-            "Sisi_Penutup_Loop_Dibuang": num_e - (num_v - 1),
-            "Panjang_Semua_Ruas_m": round(total_raw, 2),
-            "Panjang_MST_m": round(total_mst, 2),
-            "Selisih_m": round(selisih, 2),
+            "E/V": round(num_e / num_v, 2),
+            "Loop_Dibuang": num_e - (num_v - 1),
+            "Total_Ruas_m": round(total_raw, 2),
+            "MST_m": round(total_mst, 2),
             "Selisih_persen": round(selisih / total_raw * 100.0, 2),
-            "Biaya_Ilustratif_MST_Rp": round(total_mst * BIAYA_PER_METER),
+            "Biaya_MST_Rp": f"{round(total_mst * BIAYA_PER_METER):,}",
         }
         for name, m in metrics.items():
-            row[f"{name}_ms_median"] = round(m["time_ms"], 4)
-            row[f"{name}_peak_kb"] = round(m["peak_kb"], 2)
+            row[f"{name}_ms"] = round(m["time_ms"], 2)
+            row[f"{name}_kb"] = round(m["peak_kb"], 2)
         rows.append(row)
         print("  " + ", ".join(f"{k}={v}" for k, v in row.items()))
 
@@ -89,6 +87,7 @@ def run_osm_case_study(repeats: int) -> None:
             )
 
     save_osm_summary_csv(rows, "results/tables/osm_case_study.csv")
+    save_aligned_table(rows, "results/tables/osm_case_study_rapi.txt")
 
 
 def main() -> None:
